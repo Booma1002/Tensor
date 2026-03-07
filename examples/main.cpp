@@ -18,4 +18,5 @@ int main(){
     W+=b;
     see(W, "W");
     see(b,"b");
+    bm::Jade Ar = Jade::arange(DType::FLOAT64, Slice(11, 111, 5));
 }

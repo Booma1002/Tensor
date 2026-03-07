@@ -409,7 +409,7 @@ namespace bm {
         template<typename... Dims>
         Jade ones(DType dtype, const Dims... dims);
 
-        Jade arange(DType dtype, Slice range);
+        static Jade arange(DType dtype, Slice range);
 
         template<typename... Dims>
         Jade array(DType dtype, const Dims... dims);

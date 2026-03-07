@@ -56,7 +56,7 @@ namespace bm {
                 react.strides[2][i] = 0;
             }
         }
-        react.num_elements = out.get_size();
+        react.nelm = out.get_size();
         react.phys[0] = out.data_ptr();
         react.phys[1] = a.data_ptr();
         react.phys[2] = b.data_ptr();
@@ -113,7 +113,7 @@ namespace bm {
         }(), ...);
         react.dtype = out.dtype;
         std::string msg;
-        react.num_elements = out.get_size();
+        react.nelm = out.get_size();
         react.ndims = out.ndims;
         for(int i=0; i < react.ndims; ++i) {
             react.shape[i] = out.shape[i];
@@ -158,7 +158,7 @@ namespace bm {
                 react.args[arg_idx++] = const_cast<void*>(static_cast<const void*>(&args));
             }
         }(), ...);
-        react.num_elements = out.get_size();
+        react.nelm = out.get_size();
         react.ndims = out.ndims;
         for(int i=0; i < react.ndims; ++i) {
             react.shape[i] = out.shape[i];
@@ -243,7 +243,7 @@ namespace bm {
             else react.strides[2][i] = 0;
         }
 
-        react.num_elements = out.get_size();
+        react.nelm = out.get_size();
         react.phys[0] = out.data_ptr();
         react.phys[1] = a.data_ptr();
         react.phys[2] = b.data_ptr();

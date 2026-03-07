@@ -6,27 +6,26 @@ namespace bm {
     ;
 
     template<typename T, typename Func>
-    void cpu_elementwise_unary_invoke(JadeReactor &jr, Func kernel) {
+    void cpu_elementwise_unary_invoke(JadeReactor &jr, Func lambda) {
         std::string msg = std::format("[CPU Invoker] Performing Contiguous Jade Unary Reaction. Reactor Ndims={}{}",
                                       std::to_string(jr.ndims), ".");
         LOG_INFO(msg);
-        if (jr.is_contiguous && jr.opcode!= (uint64_t)OpCode::ARANGE) {
+        if (jr.is_contiguous) {
             auto out = static_cast<T *>(jr.phys[0]);
             auto in = static_cast<T *>(jr.phys[1]);
 ////////////////////////////////////////////////####{
 #if defined(_OPENMP)
-#pragma omp parallel for schedule(static) default(none) shared(jr, out, in, kernel)
+#pragma omp parallel for schedule(static) default(none) shared(jr, out, in, lambda)
 #endif
 ////////////////////////////////////////////////####}
-            for (uint64_t i = 0; i < jr.num_elements; ++i) {
-                out[i] = kernel(in[i]);
+            for (uint64_t i = 0; i < jr.nelm; ++i) {
+                out[i] = lambda(in[i]);
             }
             return;
         }
-        bool is_arange = jr.opcode == (uint64_t)OpCode::ARANGE;
 ////////////////////////////////////////////////####{
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(jr, kernel, RE_MAX_DIMS, is_arange)
+#pragma omp parallel default(none) shared(jr, lambda, RE_MAX_DIMS)
 #endif
 ////////////////////////////////////////////////####}
         {
@@ -38,36 +37,13 @@ namespace bm {
             num_threads = omp_get_num_threads();
 #endif
 ////////////////////////////////////////////////####}
-            uint64_t chop = jr.num_elements / num_threads;
-            uint64_t r = jr.num_elements % num_threads;
+            uint64_t chop = jr.nelm / num_threads;
+            uint64_t r = jr.nelm % num_threads;
             uint64_t begin = thread * chop + std::min((uint64_t) thread, r);
             uint64_t piece = chop + (thread < r ? 1 : 0);
             uint64_t end = begin + piece;
 
-            if(is_arange){
-                auto range = *static_cast<Slice*>(jr.args[0]);
-                auto phys_out = static_cast<T *>(jr.phys[0]);
-                int n=0;
-                long long lo = range.start;
-                long long hi = range.stop;
-                long long jmp = range.step;
-                uint64_t size = (hi - lo + jmp - 1) / jmp;
-                if (jmp > 0) {
-                    if (lo < 0) lo += size;
-                    if (hi < 0) hi += size;
-                    if (lo < 0) lo = 0;
-                    if (hi > static_cast<long long>(size)) hi = size;
-                    if (lo > hi) lo = hi;
-                } else {
-                    std::string msg = "Negative stride arrays not yet fully implemented :)";
-                    LOG_ERR(msg);
-                    throw MemoryException(msg);
-                }
-                for (uint64_t i = begin; i < end; ++i) {
-                    phys_out[i] = base_val + i;
-                }
-            }
-            else if (piece > 0) {
+            if (piece > 0) {
                 uint64_t foot_step[RE_MAX_DIMS] = {0};
                 get_cursor(begin, foot_step, jr.shape, jr.ndims);
 
@@ -82,7 +58,7 @@ namespace bm {
 
 
                 for (uint64_t i = begin; i < end; ++i) {
-                    phys_out[off[0]] = kernel(phys_in[off[1]]);
+                    phys_out[off[0]] = lambda(phys_in[off[1]]);
                     for (long long dim = jr.ndims - 1; dim >= 0; --dim) {
                         foot_step[dim]++;
                         off[0] += jr.strides[0][dim];
@@ -99,23 +75,25 @@ namespace bm {
     }
 
     template<typename T, typename Func>
-    void cpu_elementwise_scalar_invoke(JadeReactor &react, Func op) {
+    void cpu_elementwise_scalar_invoke(JadeReactor &react, Func lambda) {
         if (react.is_contiguous) {
             auto out = static_cast<T *>(react.phys[0]);
-////////////////////////////////////////////////####{
-#if defined(_OPENMP)
-#pragma omp parallel for schedule(static) default(none) shared(react, out, op)
-#endif
-////////////////////////////////////////////////####}
-            for (uint64_t i = 0; i < react.num_elements; ++i) {
-                out[i] = op(out[i]);
-            }
-            return;
-        }
 
 ////////////////////////////////////////////////####{
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(react, op, RE_MAX_DIMS)
+#pragma omp parallel for schedule(static) default(none) shared(react, out, lambda)
+#endif
+////////////////////////////////////////////////####}
+            for (uint64_t i = 0; i < react.nelm; ++i) {
+                out[i] = lambda(out[i]);
+            }
+            return;
+        }
+        double val = *static_cast<double*>(react.args[0]);
+
+////////////////////////////////////////////////####{
+#if defined(_OPENMP)
+#pragma omp parallel default(none) shared(react, lambda, RE_MAX_DIMS, val)
 #endif
 ////////////////////////////////////////////////####}
         {
@@ -127,8 +105,8 @@ namespace bm {
             num_threads = omp_get_num_threads();
 #endif
 ////////////////////////////////////////////////####}
-            uint64_t chop = react.num_elements / num_threads;
-            uint64_t r = react.num_elements % num_threads;
+            uint64_t chop = react.nelm / num_threads;
+            uint64_t r = react.nelm % num_threads;
             uint64_t begin = thread * chop + std::min((uint64_t) thread, r);
             uint64_t piece = chop + (thread < r ? 1 : 0);
             uint64_t end = begin + piece;
@@ -145,7 +123,7 @@ namespace bm {
                 auto phys_out = static_cast<T *>(react.phys[0]);
 
                 for (uint64_t i = begin; i < end; ++i) {
-                    phys_out[off_out] = op(react.Val);
+                    phys_out[off_out] = lambda(val);
 
                     for (long long dim = react.ndims - 1; dim >= 0; --dim) {
                         foot_step[dim]++;
@@ -161,7 +139,7 @@ namespace bm {
 
 
     template<typename T, typename Func>
-    void cpu_elementwise_binary_invoke(JadeReactor &react, Func op) {
+    void cpu_elementwise_binary_invoke(JadeReactor &react, Func lambda) {
         std::string msg = std::format("[CPU Invoker] Performing Contiguous Jade Binary Reaction. Reactor Ndims={}.",
                                       std::to_string(react.ndims));
         LOG_INFO(msg);
@@ -171,18 +149,18 @@ namespace bm {
             auto B = static_cast<T *>(react.phys[2]);
 ////////////////////////////////////////////////####{
 #if defined(_OPENMP)
-#pragma omp parallel for schedule(static) default(none) shared(react, OUT, A, B, op)
+#pragma omp parallel for schedule(static) default(none) shared(react, OUT, A, B, lambda)
 #endif
 ////////////////////////////////////////////////####}
-            for (uint64_t i = 0; i < react.num_elements; ++i) {
-                OUT[i] = op(A[i], B[i]);
+            for (uint64_t i = 0; i < react.nelm; ++i) {
+                OUT[i] = lambda(A[i], B[i]);
             }
             return;
         }
 
 ////////////////////////////////////////////////####{
 #if defined(_OPENMP)
-#pragma omp parallel default(none) shared(react, op, RE_MAX_DIMS)
+#pragma omp parallel default(none) shared(react, lambda, RE_MAX_DIMS)
 #endif
 ////////////////////////////////////////////////####}
         {
@@ -194,8 +172,8 @@ namespace bm {
             num_threads = omp_get_num_threads();
 #endif
 ////////////////////////////////////////////////####}
-            uint64_t chop = react.num_elements / num_threads;
-            uint64_t r = react.num_elements % num_threads;
+            uint64_t chop = react.nelm / num_threads;
+            uint64_t r = react.nelm % num_threads;
             uint64_t begin = thread * chop + std::min((uint64_t) thread, r);
             uint64_t piece = chop + (thread < r ? 1 : 0);
             uint64_t end = begin + piece;
@@ -216,7 +194,7 @@ namespace bm {
                 auto phys_b = static_cast<T *>(react.phys[2]);
 
                 for (uint64_t i = begin; i < end; ++i) {
-                    phys_out[off[0]] = op(phys_a[off[1]], phys_b[off[2]]);
+                    phys_out[off[0]] = lambda(phys_a[off[1]], phys_b[off[2]]);
 
                     for (long long dim = react.ndims - 1; dim >= 0; --dim) {
                         foot_step[dim]++;
@@ -284,6 +262,69 @@ namespace bm {
                     double valA = A[i * strA_m + k * strA_k];
                     for (uint64_t j = 0; j < N; ++j) {
                         OUT[i * strOut_m + j * strOut_n] += valA * B[k * strB_k + j * strB_n];
+                    }
+                }
+            }
+        }
+    }
+
+    template<typename T, typename Func>
+    void cpu_generator_invoke(JadeReactor &jr, Func lambda) {
+        if (jr.is_contiguous) {
+            auto out = static_cast<T *>(jr.phys[0]);
+
+////////////////////////////////////////////////####{
+#if defined(_OPENMP)
+#pragma omp parallel for schedule(static) default(none) shared(jr, out, lambda)
+#endif
+////////////////////////////////////////////////####}
+
+            for (uint64_t i = 0; i < jr.nelm; ++i) {
+                out[i] = lambda(i);
+            }
+            return;
+        }
+
+////////////////////////////////////////////////####{
+#if defined(_OPENMP)
+#pragma omp parallel default(none) shared(jr, lambda, RE_MAX_DIMS)
+#endif
+////////////////////////////////////////////////####}
+        {
+            int thread = 0, num_threads = 1;
+
+////////////////////////////////////////////////####{
+#if defined(_OPENMP)
+            thread = omp_get_thread_num();
+            num_threads = omp_get_num_threads();
+#endif
+////////////////////////////////////////////////####}
+            uint64_t chop = jr.nelm / num_threads;
+            uint64_t r = jr.nelm % num_threads;
+            uint64_t begin = thread * chop + std::min((uint64_t) thread, r);
+            uint64_t piece = chop + (thread < r ? 1 : 0);
+            uint64_t end = begin + piece;
+
+            if (piece > 0) {
+                uint64_t foot_step[RE_MAX_DIMS] = {0};
+                get_cursor(begin, foot_step, jr.shape, jr.ndims);
+
+                uint64_t off_out = 0;
+                for (uint64_t d = 0; d < jr.ndims; ++d) {
+                    off_out += foot_step[d] * jr.strides[0][d];
+                }
+
+                auto phys_out = static_cast<T *>(jr.phys[0]);
+
+                for (uint64_t i = begin; i < end; ++i) {
+                    phys_out[off_out] = lambda(i);
+
+                    for (long long dim = jr.ndims - 1; dim >= 0; --dim) {
+                        foot_step[dim]++;
+                        off_out += jr.strides[0][dim];
+                        if (foot_step[dim] < jr.shape[dim]) break;
+                        foot_step[dim] = 0;
+                        off_out -= jr.shape[dim] * jr.strides[0][dim];
                     }
                 }
             }

@@ -87,9 +87,17 @@ void cpu_clip_kernel(JadeReactor& jr) {
                        return static_cast<decltype(a)>(res);
                    });
 }
-void cpu_arange_kernel(JadeReactor& jr) {
-    DISPATCH_DTYPE(jr.dtype, cpu_elementwise_unary_invoke, jr,
-                   [](auto a) { return a;});
+
+void cpu_arange_kernel(JadeReactor& reactor) {
+    Slice range = *static_cast<Slice*>(reactor.args[0]);
+    auto start = range.start;
+    auto step  = range.step;
+
+    DISPATCH_DTYPE(reactor.dtype, cpu_generator_invoke, reactor,
+                   [start, step](uint64_t index) {
+                       auto val = start + (static_cast<double>(index) * step);
+                       return static_cast<decltype(val)>(val);
+                   });
 }
 
 }

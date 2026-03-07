@@ -34,31 +34,6 @@ namespace bm {
         return output;
     }
 
-    Jade Jade::arange(DType dType, Slice range){
-        int n=0;
-        long long l = range.start;
-        long long r = range.stop;
-        long long jmp = range.step;
-        uint64_t size = 1;
-        if (jmp > 0) {
-            if (l < 0) l += size;
-            if (r < 0) r += size;
-            if (l < 0) l = 0;
-            if (r > static_cast<long long>(size)) r = size;
-            if (l > r) l = r;
-        } else {
-            std::string msg = "Negative stride arrays not yet fully implemented :)";
-            LOG_ERR(msg);
-            throw MemoryException(msg);
-        }
-        uint64_t len = 0;
-        if (jmp > 0) len = (r - l + jmp - 1) / jmp;
-        Jade output(dtype, 0.0f, len, 1);
-        Jade input = output;
-        Dispatcher::execute_unary(OpCode::ARANGE, output, input ,range);
-        return output;
-    }
-
     template<typename... Dims>
     Jade Jade::array(DType dType, const Dims... dims){
 

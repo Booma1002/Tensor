@@ -71,7 +71,7 @@ namespace bm {
         DType dtype = DType::NONE;
         bool is_contiguous = false;
         uint64_t ndims = 0;
-        uint64_t num_elements = 0;
+        uint64_t nelm = 0;
         uint64_t inner_k = 0;
         void* args[RE_MAX_ARGS];
 

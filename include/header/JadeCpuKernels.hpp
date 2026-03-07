@@ -21,10 +21,10 @@ namespace bm {
     void cpu_elementwise_unary_invoke(JadeReactor &jr, Func kernel);
 
     template<typename Func>
-    void cpu_elementwise_scalar_invoke(JadeReactor &react, Func op);
+    void cpu_elementwise_scalar_invoke(JadeReactor &react, Func lambda);
 
     template<typename Func>
-    void cpu_elementwise_binary_invoke(JadeReactor &react, Func op);
+    void cpu_elementwise_binary_invoke(JadeReactor &react, Func lambda);
 
     void cpu_MatMul_binary_invoke(JadeReactor &react);
 
@@ -59,7 +59,9 @@ namespace bm {
 
     void cpu_log_kernel(JadeReactor &jr);
 
-    void cpu_clip_kernel(JadeReactor &jr)
+    void cpu_clip_kernel(JadeReactor &jr);
+
+    void cpu_arange_kernel(JadeReactor& reactor);
 
 // ===========================================================
 // =========={..........Registration..........}===============
