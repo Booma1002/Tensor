@@ -416,9 +416,10 @@ namespace bm {
 ////////////////////////////////////////////////####}
                 {global_acc = lambda(global_acc, local_acc);}
             }
-            auto out = static_cast<T *>(jr.phys[0]);
-            out[0] = global_acc;
+
         }
+        auto out = static_cast<T *>(jr.phys[0]);
+        out[0] = global_acc;
     }
 
     // --- Binary Reduction ---
@@ -505,9 +506,10 @@ namespace bm {
                 { global_acc += local_acc; }
             }
 
-            auto out = static_cast<T *>(jr.phys[0]);
-            out[0] = global_acc;
+
         }
+        auto out = static_cast<T *>(jr.phys[0]);
+        out[0] = global_acc;
     }
     // --- MAX ---
     template<typename T>
@@ -577,7 +579,8 @@ namespace bm {
                     global_sum_sq += local_sum_sq;
                 }
             }
-        } else {
+        }
+        else {
             auto in = static_cast<T*>(jr.phys[1]);
 ////////////////////////////////////////////////####{
 #if defined(_OPENMP)
@@ -731,12 +734,12 @@ namespace bm {
                         if constexpr (MAX_MODE){//compile time
                                 if (in[off] > local_acc.val) { //running time
                                     local_acc.val = in[off];
-                                    local_acc.idx = off;
+                                    local_acc.idx = i;
                                 }
                         }else {
                                 if (in[off] < local_acc.val) {
                                     local_acc.val = in[off];
-                                    local_acc.idx = off;
+                                    local_acc.idx = i;
                                 }
                         }
 

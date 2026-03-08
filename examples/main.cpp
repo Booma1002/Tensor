@@ -38,22 +38,21 @@ int main(){
     see(zeros,"zeros");
     Jade ones = Jade::ones(DType::UINT8, 7, 7);
     see(ones,"ones");
+    auto res_max = Jade::max(a);
+    std::cout << "\nMax Value: " << res_max.item<double>() << "\n";
 
-    auto res = Jade::max(a);
-    see(res,"max");
-    res = Jade::min(a);
-    see(res,"min");
-    res = Jade::argmax(a);
-    see(res,"argmax");
-    res = Jade::argmin(a);
-    see(res,"argmin");
-    res = Jade::std(a);
-    see(res,"std");
-    res = Jade::var(a);
-    see(res,"var");
-    res = Jade::mean(c_copy);
-    see(res,"mean");
-    res = b.dot(a);
+    auto res_min = Jade::min(a);
+    std::cout << "Min Value: " << res_min.item<double>() << "\n";
+
+    auto res_mean = Jade::mean(a);
+    std::cout << "Mean Value: " << res_mean.item<double>() << "\n";
+
+    auto res_argmax = Jade::argmax(a);
+    std::cout << "Argmax Index: " << res_argmax.item<uint64_t>() << "\n"; // Extracted perfectly as a uint64_t
+
+    auto res_argmin = Jade::argmin(a);
+    std::cout << "Argmin Index: " << res_argmin.item<uint64_t>() << "\n";
+    auto res = b.dot(a);
     see(res,"dot");
 
 }
