@@ -3,7 +3,7 @@
 
 namespace bm{
     template<typename... Args>
-    void Dispatcher::execute_binary(OpCode op, Jade& out, const Jade& a, const Jade& b, Args... args) {
+    void Dispatcher::execute_binary(OpCode op, Jade& out, const Jade& a, const Jade& b, Args&... args) {
         // TODO: check if A, B are on the same device
         Device target_device = Device::CPU;
         JadeReactor react;
@@ -17,7 +17,7 @@ namespace bm{
 
 
     template<typename... Args>
-    void Dispatcher::execute_unary(OpCode op, Jade& out, const Jade& a, Args... args) {
+    void Dispatcher::execute_unary(OpCode op, Jade& out, const Jade& a, Args&... args) {
         Device target_device = Device::CPU;
         JadeReactor react = JadeReactor::react_unary(op, out, a, args...);
         Kernel kernel_func = Registry::get().lookup(op, target_device);
@@ -27,7 +27,7 @@ namespace bm{
     }
 
     template<typename... Args>
-    void Dispatcher::execute_scalar(OpCode op, Jade& out, const double a, Args... args) {
+    void Dispatcher::execute_scalar(OpCode op, Jade& out, const double a, Args&... args) {
         Device target_device = Device::CPU;
         JadeReactor react = JadeReactor::react_scalar(op, out, a, args...);
         Kernel kernel_func = Registry::get().lookup(op, target_device);

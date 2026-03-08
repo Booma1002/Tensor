@@ -707,3 +707,5 @@ namespace bm {
     };
 
 }// namespace bm
+#include "../temp/Jade.tpp";
+#include "../temp/JadeTransformations.tpp";

@@ -3,7 +3,7 @@
 namespace bm {
 
     template<typename... Args>
-    JadeReactor JadeReactor::react_binary(OpCode opcode, Jade& out, const Jade& a, const Jade& b, Args... args) {
+    JadeReactor JadeReactor::react_binary(OpCode opcode, Jade& out, const Jade& a, const Jade& b, Args&... args) {
         if (a.dtype != b.dtype) {
             std::string msg = "DType Mismatch: Type Promotion not yet supported.";
             LOG_WARN(msg);
@@ -88,7 +88,7 @@ namespace bm {
     }
 
     template<typename... Args>
-    JadeReactor JadeReactor::react_unary(OpCode opcode, Jade& out, const Jade& a, Args... args){
+    JadeReactor JadeReactor::react_unary(OpCode opcode, Jade& out, const Jade& a, Args&... args){
         if (out.ndims != a.ndims) {
             std::string msg;
             msg += std::format("[Unary Reactor] Rank Mismatch. \nA: ",  a.repr() ,  "\nOutput: ",  out.repr());
@@ -148,7 +148,7 @@ namespace bm {
     }
 
     template<typename... Args>
-    JadeReactor JadeReactor::react_scalar(OpCode opcode, Jade& out, Args... args){
+    JadeReactor JadeReactor::react_scalar(OpCode opcode, Jade& out, Args&... args){
         JadeReactor react;
         react.dtype = out.dtype;
         react.opcode = (int)opcode;
@@ -194,7 +194,7 @@ namespace bm {
 
 
     template<typename... Args>
-    JadeReactor JadeReactor::react_matmul(OpCode opcode, Jade& out, const Jade& a, const Jade& b, Args... args) {
+    JadeReactor JadeReactor::react_matmul(OpCode opcode, Jade& out, const Jade& a, const Jade& b, Args&... args) {
         if (a.dtype != b.dtype){
             std::string msg = "DType Mismatch: Type Promotion not yet supported.";
             LOG_WARN(msg);

@@ -193,7 +193,7 @@ namespace bm {
  */
 
         template<typename... Args>
-        static JadeReactor react_binary(OpCode opcode, Jade &out, const Jade &a, const Jade &b, Args... args);
+        static JadeReactor react_binary(OpCode opcode, Jade &out, const Jade &a, const Jade &b, Args&... args);
 
 /**
  * @brief Constructs an execution context for a single-reactant jade reaction.
@@ -207,11 +207,11 @@ namespace bm {
  */
 
         template<typename... Args>
-        static JadeReactor react_unary(OpCode opcode, Jade &out, const Jade &a, Args... args);
+        static JadeReactor react_unary(OpCode opcode, Jade &out, const Jade &a, Args&... args);
 
 
         template<typename... Args>
-        static JadeReactor react_scalar(OpCode opcode, Jade &out, Args... args);
+        static JadeReactor react_scalar(OpCode opcode, Jade &out, Args&... args);
 
 /**
  * @brief Prepares an execution context for General Matrix Multiplication (GEMM).
@@ -227,7 +227,7 @@ namespace bm {
  */
 
         template<typename... Args>
-        static JadeReactor react_matmul(OpCode opcode, Jade &out, const Jade &a, const Jade &b, Args... args);
+        static JadeReactor react_matmul(OpCode opcode, Jade &out, const Jade &a, const Jade &b, Args&... args);
     };
 
 /**
