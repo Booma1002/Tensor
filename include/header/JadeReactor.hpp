@@ -216,6 +216,11 @@ namespace bm {
         template<typename... Args>
         static JadeReactor react_variadic(OpCode opcode, Jade& out, Args&... args);
 
+        template<typename... Args>
+        static JadeReactor react_reduction(OpCode opcode, Jade &out, const Jade &a, Args&... args);
+
+        template<typename... Args>
+        static JadeReactor react_reduction_binary(OpCode opcode, Jade &out, const Jade &a, const Jade &b, Args&... args);
 /**
  * @brief Prepares an execution context for General Matrix Multiplication (GEMM).
  * Identifies the contraction dimension (`inner_k`) and configures batching strides.

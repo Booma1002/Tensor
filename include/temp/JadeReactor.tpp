@@ -236,6 +236,74 @@ namespace bm {
         return react;
     }
 
+    template<typename... Args>
+    JadeReactor JadeReactor::react_reduction(OpCode opcode, Jade& out, const Jade& a, Args&... args){
+        JadeReactor react;
+        react.opcode = (int)opcode;
+        int arg_idx = 0;
+        ([&] {
+            if (arg_idx < RE_MAX_ARGS) react.args[arg_idx++] = const_cast<void*>(static_cast<const void*>(&args));
+        }(), ...);
+
+        react.dtype = out.dtype;
+        // 🔥 Reductions iterate over the INPUT space.
+        react.numel = a.get_size();
+        react.ndims = a.ndims;
+
+        for(long long i = 0; i < react.ndims; ++i) {
+            react.shape[i] = a.shape[i];
+            react.strides[1][i] = a.strides[i]; // Input strides
+            react.strides[0][i] = 0;            // Output is a scalar (stride 0)
+            react.strides[2][i] = 0;            // Dummy
+        }
+
+        react.phys[0] = out.data_ptr();
+        react.phys[1] = a.data_ptr();
+        react.phys[2] = nullptr;
+
+        react.merge_dims();
+        react.is_contiguous = true;
+        if (react.ndims == 1 && react.strides[1][0] != 1) react.is_contiguous = false;
+        if (react.ndims > 1) react.is_contiguous = false;
+
+        return react;
+    }
+
+    template<typename... Args>
+    JadeReactor JadeReactor::react_reduction_binary(OpCode opcode, Jade& out, const Jade& a, const Jade& b, Args&... args){
+        if (a.ndims != b.ndims || a.get_size() != b.get_size()) {
+            throw ShapeMismatchException("[Reduction Binary] Inputs must have matching shapes for dot product.");
+        }
+        JadeReactor react;
+        react.opcode = (int)opcode;
+        int arg_idx = 0;
+        ([&] {
+            if (arg_idx < RE_MAX_ARGS) react.args[arg_idx++] = const_cast<void*>(static_cast<const void*>(&args));
+        }(), ...);
+
+        react.dtype = out.dtype;
+        react.numel = a.get_size();
+        react.ndims = a.ndims;
+
+        for(long long i = 0; i < react.ndims; ++i) {
+            react.shape[i] = a.shape[i];
+            react.strides[1][i] = a.strides[i]; // Input A
+            react.strides[2][i] = b.strides[i]; // Input B
+            react.strides[0][i] = 0;            // Output Scalar
+        }
+
+        react.phys[0] = out.data_ptr();
+        react.phys[1] = a.data_ptr();
+        react.phys[2] = b.data_ptr();
+
+        react.merge_dims();
+        react.is_contiguous = true;
+        if (react.ndims == 1 && (react.strides[1][0] != 1 || react.strides[2][0] != 1)) react.is_contiguous = false;
+        if (react.ndims > 1) react.is_contiguous = false;
+
+        return react;
+    }
+
 
 
     template<auto MemberFunc, typename T, typename Ret, typename... Args>

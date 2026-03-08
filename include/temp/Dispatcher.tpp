@@ -36,4 +36,24 @@ namespace bm{
         LOG_DEBUG(msg);
     }
 
+    template<typename... Args>
+    void Dispatcher::execute_reduction(OpCode op, Jade& out, const Jade& a, Args&... args) {
+        Device target_device = Device::CPU;
+        JadeReactor react = JadeReactor::react_reduction(op, out, a, args...);
+        Kernel kernel_func = Registry::get().lookup(op, target_device);
+        kernel_func(react);
+        std::string msg = std::format("[Dispatcher] Executed Unary Reduction Reaction: OpCode={:#x}" ,static_cast<int>(op));
+        LOG_DEBUG(msg);
+    }
+
+    template<typename... Args>
+    void Dispatcher::(OpCode op, Jade& out, const Jade& a, const Jade& b, Args&... args) {
+        Device target_device = Device::CPU;
+        JadeReactor react = JadeReactor::react_reduction_binary(op, out, a, b, args...);
+        Kernel kernel_func = Registry::get().lookup(op, target_device);
+        kernel_func(react);
+        std::string msg = std::format("[Dispatcher] Executed Binary Reduction Reaction: OpCode={:#x}" ,static_cast<int>(op));
+        LOG_DEBUG(msg);
+    }
+
 }
