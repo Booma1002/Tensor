@@ -114,4 +114,4 @@ namespace bm {
 
 }
 
-#include "temp/JadeCpuKernels.tpp"
+#include "temp/JadeInvokersCpu.tpp"
