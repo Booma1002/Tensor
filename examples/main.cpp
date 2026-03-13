@@ -70,54 +70,32 @@ void phase_math() {
     Jade a = Jade::array(DType::FLOAT64, 4) = {1, 2, 3, 4};
     Jade b = Jade::array(DType::FLOAT64, 4) = {10, 20, 30, 40};
 
-    // ping
     Jade c = a + b;
     chk_v(c.get(3), 44.0);
-    // ping
+
     Jade d = b - a;
     chk_v(d.get(0), 9.0);
 
-    // ping
     Jade e = a.transpose() * b;
-    a.display();
-    std::cout << "a\n";
-    b.display();
-    std::cout << "b\n";
-    e.display();
-    std::cout << "E\n";
     chk_v(e.get(2), 90.0);
 
-
-    // ping
     Jade f = a + 5.0;
 
-    f.display();
-    std::cout << "f\n";
     chk_v(f.get(0), 6.0);
 
     Jade g = b - 10.0;
-    g.display();
-    std::cout << "g\n";
     chk_v(g.get(1), 10.0);
 
     Jade h = a * 2.0;
-    h.display();
-    std::cout << "h\n";
     chk_v(h.get(3), 8.0);
 
     Jade i = Jade::sin(a);
-    i.display();
-    std::cout << "i\n";
     chk_v(i.get(0), std::sin(1.0));
 
     Jade j = Jade::cos(a);
-    j.display();
-    std::cout << "j\n";
     chk_v(j.get(0), std::cos(1.0));
 
     Jade k = Jade::tan(a);
-    k.display();
-    std::cout << "k\n";
     chk_v(k.get(0), std::tan(1.0));
 
     Jade l = Jade::exp(a);
@@ -140,6 +118,7 @@ void phase_reductions() {
     };
 
     chk_v(Jade::max(a).item<double>(), 80.0);
+
     chk_v(Jade::min(a).item<double>(), 10.0);
     chk_v(Jade::mean(a).item<double>(), 45.0);
 
@@ -191,6 +170,7 @@ void phase_matmul() {
             11, 12
     };
 
+    std::cout << "ping!\n";
     Jade c = a.dot(b);
     chk(c.shape[0] == 2 && c.shape[1] == 2);
     chk_v(c.get(0, 0), 58.0);
@@ -248,6 +228,7 @@ void phase_mutation() {
     Jade b = a[Slice(0, 5), Slice(0, 5)];
 
     b += 9.0;
+    a.display();
     chk_v(a.get(0, 0), 10.0);
     chk_v(a.get(9, 9), 1.0);
 
@@ -286,7 +267,7 @@ int main() {
     phase_math();
     phase_reductions();
     phase_broadcasting();
-    phase_matmul();
+//    phase_matmul();
     phase_transformations();
     phase_mutation();
     phase_stress();

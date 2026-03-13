@@ -332,7 +332,7 @@ namespace bm {
         template <typename... Args>
         Jade operator[](Args... args) const;
         template <typename T>
-        Jade operator[](std::initializer_list<uint64_t> il) const;
+        Jade operator[](std::initializer_list<T> il) const;
 
         /**
      * @brief Reassigns the jade to become a view of another jade.
@@ -368,7 +368,7 @@ namespace bm {
         static Jade std(const Jade& input, std::initializer_list<uint64_t> axes = {});
         static Jade var(const Jade& input, std::initializer_list<uint64_t> axes = {});
         static Jade mean(const Jade& input, std::initializer_list<uint64_t> axes = {});
-        static Jade max(const Jade& input, std::initializer_list<uint64_t> ilist = {});
+        static Jade max(const Jade& input, std::initializer_list<uint64_t> axes = {});
         static Jade min(const Jade& input, std::initializer_list<uint64_t> axes = {});
         static Jade argmax(const Jade& input, std::initializer_list<uint64_t> axes = {});
         static Jade argmin(const Jade& input, std::initializer_list<uint64_t> axes ={});
@@ -652,9 +652,11 @@ namespace bm {
 
         void apply_slice(uint64_t dim, uint64_t& ndim_tracker, uint64_t& offset_tracker,
                          uint64_t* shp_2, uint64_t* str_2) const;
+
+        template <typename T>
         void apply_slice_from_array(uint64_t dim, uint64_t &ndim_tracker, uint64_t &offset_tracker,
                                     uint64_t *shape_out, uint64_t *stride_out,
-                                    const uint64_t* axis, size_t N) const;
+                                    const T* axis, size_t N) const;
 
         /**
      * @brief Recursively processes slice arguments to calculate new bounds.
@@ -773,6 +775,6 @@ namespace bm {
     };
 
 }// namespace bm
-#include "../temp/Jade.tpp";
+#include "../temp/Jade.tpp"
 #include "../temp/JadeTransformations.tpp"
 #include "../temp/JadeFactories.tpp"

@@ -101,14 +101,14 @@ Jade Jade::operator*(const Jade& other) const {
 
 Jade Jade::operator+(const double & val) const {
     Jade other = Jade::full_like(*this, val);
-    Jade view = Jade(*this);
+    Jade view = Jade::zeros_like(*this);
     Dispatcher::execute_binary(OpCode::ADD, view, *this, other);
     return view;
 }
 
 Jade Jade::operator-(const double & val) const {
     Jade other = Jade::full_like(*this, val);
-    Jade view = Jade(*this);
+    Jade view = Jade::zeros_like(*this);
     Dispatcher::execute_binary(OpCode::SUB, view, *this, other);
     return view;
 }
@@ -134,7 +134,7 @@ Jade& Jade::operator=(const double val) {
 
 Jade Jade::operator*(const double & val) const {
     Jade other = Jade::full_like(*this, val);
-    Jade view = Jade(*this);
+    Jade view = Jade::zeros_like(*this);
     Dispatcher::execute_binary(OpCode::MUL, view, *this, other);
     return view;
 }

@@ -155,32 +155,13 @@ uint64_t* Jade::reverse(uint64_t* arr, const uint64_t N){
     return arr;
 }
 
+
 void Jade::apply_slice(uint64_t dim, uint64_t& ndim_tracker, uint64_t& offset_tracker,
                        uint64_t* shp_2, uint64_t* str_2) const {
     for (uint64_t i = dim; i < ndims; ++i) {
         shp_2[ndim_tracker] = shape[i];
         str_2[ndim_tracker] = strides[i];
         ndim_tracker++;
-    }
-}
-
-void Jade::apply_slice_from_array(uint64_t dim, uint64_t &ndim_tracker, uint64_t &offset_tracker,
-                                  uint64_t *shape_out, uint64_t *stride_out,
-                                  const uint64_t* axis, size_t N) const {
-    size_t i = 0;
-    for (; i < N && dim < ndims; ++i, ++dim) {
-        auto ax = static_cast<long long>(axis[i]);
-        if (ax < 0) ax += shape[dim];
-        if (ax < 0 || static_cast<uint64_t>(ax) >= shape[dim]){
-            LOG_ERR("Jade index out of range.");
-            throw SlicingException("Jade index out of range.");
-        }
-        offset_tracker += static_cast<uint64_t>(ax) * strides[dim];
-    }
-    for (; dim < ndims; ++dim) {
-        shape_out[ndim_tracker] = shape[dim];
-        stride_out[ndim_tracker] = strides[dim];
-        ++ndim_tracker;
     }
 }
 

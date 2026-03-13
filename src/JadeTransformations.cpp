@@ -40,7 +40,7 @@ void Jade::copy_from(const Jade& other) {
 }
 
 Jade Jade::copy() const {
-    Jade view = Jade(*this);
+    Jade view = Jade::zeros_like(*this);
     Dispatcher::execute_unary(OpCode::COPY, view, *this);
     return view;
 }

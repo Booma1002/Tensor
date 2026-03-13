@@ -86,7 +86,7 @@ namespace bm {
     Jade Jade::operator[](Args... args) const {
 
         int constexpr newaxes = (0 + ... + (std::is_same_v<Args, NewAxis_t> ? 1 : 0));
-        if (sizeof...(Args) - newaxes != ndims) {
+        if (sizeof...(Args) - newaxes != ndims ) {
             std::string msg = "Telemetry dimensions arguments count doesn't match jade's ndims.";
             LOG_ERR(msg);
             throw ShapeMismatchException(msg);
@@ -108,13 +108,13 @@ namespace bm {
     }
 
     template<typename T>
-    Jade Jade::operator[](std::initializer_list<uint64_t> il) const {
+    Jade Jade::operator[](std::initializer_list<T> il) const {
         auto new_shape = std::make_unique<uint64_t[]>(ndims);
         auto new_strides = std::make_unique<uint64_t[]>(ndims);
         uint64_t new_offset = this->offset;
         uint64_t new_ndims = 0;
 
-        apply_slice_from_array(0, new_ndims, new_offset, new_shape.get(), new_strides.get(), il.begin(), il.size());
+        apply_slice_from_array<T>(0, new_ndims, new_offset, new_shape.get(), new_strides.get(), il.begin(), il.size());
 
         Jade view(*this);
         view.ndims = new_ndims;
@@ -124,44 +124,28 @@ namespace bm {
         return view;
     }
 
-
-
-    template<typename T>
-    T Jade::item() const {
-        if (get_numel() <= 0) {
-            std::string msg = "[Jade] Cannot call .item() on a jade with " + std::to_string(get_numel()) + " elements. Must be >= 1.";
-            LOG_ERR(msg);
-            throw std::runtime_error(msg);
+    template <typename T>
+    void Jade::apply_slice_from_array(uint64_t dim, uint64_t &ndim_tracker, uint64_t &offset_tracker,
+                                      uint64_t *shape_out, uint64_t *stride_out,
+                                      const T* axes_in, size_t N) const {
+        auto axis = static_cast<const uint64_t*> (axes_in);
+        size_t i = 0;
+        for (; i < N && dim < ndims; ++i, ++dim) {
+            auto ax = static_cast<long long>(axis[i]);
+            if (ax < 0) ax += shape[dim];
+            if (ax < 0 || static_cast<uint64_t>(ax) >= shape[dim]){
+                LOG_ERR("Jade index out of range.");
+                throw SlicingException("Jade index out of range.");
+            }
+            offset_tracker += static_cast<uint64_t>(ax) * strides[dim];
         }
-        switch(this->dtype) {
-            case DType::FLOAT32: return static_cast<T>(static_cast<float*>(data_ptr())[0]);
-            case DType::FLOAT64: return static_cast<T>(static_cast<double*>(data_ptr())[0]);
-            case DType::INT32:   return static_cast<T>(static_cast<int32_t*>(data_ptr())[0]);
-            case DType::UINT8:   return static_cast<T>(static_cast<uint8_t*>(data_ptr())[0]);
-            case DType::UINT16 : return static_cast<T>(static_cast<int16_t*>(data_ptr())[0]);
-            case DType::UINT32:  return static_cast<T>(static_cast<uint32_t*>(data_ptr())[0]);
-            case DType::INT16:   return static_cast<T>(static_cast<int16_t*>(data_ptr())[0]);
-            case DType::UINT64:  return static_cast<T>(static_cast<uint64_t*>(data_ptr())[0]);
-            case DType::INT64:   return static_cast<T>(static_cast<int64_t*>(data_ptr())[0]);
-            default: return static_cast<T>(0);;
+        for (; dim < ndims; ++dim) {
+            shape_out[ndim_tracker] = shape[dim];
+            stride_out[ndim_tracker] = strides[dim];
+            ++ndim_tracker;
         }
     }
 
-    template<typename... Indices>
-    double Jade::get(Indices... indices) const {
-        uint64_t IDX = 0;
-        size_t id = 0;
-        ((IDX += indices * strides[id++]), ...);
-        return static_cast<double*>(data_ptr())[IDX];
-    }
-
-    template<typename... Indices>
-    void Jade::set(const double val, Indices... indices) {
-        uint64_t IDX = 0;
-        size_t id = 0;
-        ((IDX += indices * strides[id++]), ...);
-        static_cast<double*>(data_ptr())[IDX] = val;
-    }
 
     template<typename T, typename... Rest>
     void Jade::apply_slice(uint64_t dim, uint64_t &ndim_tracker, uint64_t &offset_tracker,
@@ -201,8 +185,7 @@ namespace bm {
                 throw SlicingException(msg);
             }
 
-            uint64_t len = 0;
-            if (jmp > 0) len = (r - l + jmp - 1) / jmp;
+            uint64_t len = (r - l + jmp - 1) / jmp;
             offset_tracker += l * strides[dim];
             shape_out[ndim_tracker] = len;
             stride_out[ndim_tracker] = strides[dim] * jmp;
@@ -210,5 +193,44 @@ namespace bm {
             apply_slice(dim + 1, ndim_tracker, offset_tracker, shape_out, stride_out, rest...);
         }
     }
+
+    template<typename T>
+    T Jade::item() const {
+        if (get_numel() <= 0) {
+            std::string msg = "[Jade] Cannot call .item() on a jade with " + std::to_string(get_numel()) + " elements. Must be >= 1.";
+            LOG_ERR(msg);
+            throw std::runtime_error(msg);
+        }
+        switch(this->dtype) {
+            case DType::FLOAT32: return static_cast<T>(static_cast<float*>(data_ptr())[0]);
+            case DType::FLOAT64: return static_cast<T>(static_cast<double*>(data_ptr())[0]);
+            case DType::INT32:   return static_cast<T>(static_cast<int32_t*>(data_ptr())[0]);
+            case DType::UINT8:   return static_cast<T>(static_cast<uint8_t*>(data_ptr())[0]);
+            case DType::UINT16 : return static_cast<T>(static_cast<int16_t*>(data_ptr())[0]);
+            case DType::UINT32:  return static_cast<T>(static_cast<uint32_t*>(data_ptr())[0]);
+            case DType::INT16:   return static_cast<T>(static_cast<int16_t*>(data_ptr())[0]);
+            case DType::UINT64:  return static_cast<T>(static_cast<uint64_t*>(data_ptr())[0]);
+            case DType::INT64:   return static_cast<T>(static_cast<int64_t*>(data_ptr())[0]);
+            default: return static_cast<T>(0);;
+        }
+    }
+
+    template<typename... Indices>
+    double Jade::get(Indices... indices) const {
+        uint64_t IDX = 0;
+        size_t id = 0;
+        ((IDX += indices * strides[id++]), ...);
+        return static_cast<double*>(data_ptr())[IDX];
+    }
+
+    template<typename... Indices>
+    void Jade::set(const double val, Indices... indices) {
+        uint64_t IDX = 0;
+        size_t id = 0;
+        ((IDX += indices * strides[id++]), ...);
+        static_cast<double*>(data_ptr())[IDX] = val;
+    }
+
+
 
 }
