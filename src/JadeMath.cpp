@@ -1,7 +1,18 @@
 #include "header/Jade.hpp"
 #include "header/Dispatcher.hpp"
 using namespace bm;
-Jade Jade::operator+(const Jade& other) const {
+
+bool Jade::can_takeover(const Jade& jade, const uint64_t* target_shape, uint64_t target_ndims) {
+    if (jade.memory.use_count() != 1) return false;
+    if (jade.ndims != target_ndims) return false;
+
+    for (uint64_t i = 0; i < target_ndims; ++i) {
+        if (jade.shape[i] != target_shape[i]) return false;
+    }
+    return true;
+}
+
+Jade Jade::operator+(const Jade& other) const &{
     uint64_t max_dims = std::max(this->ndims, other.ndims);
     auto out_shape = Jade::broadcast(*this, other);
     Jade view(this->dtype, 0.0f, out_shape.get(), max_dims);
@@ -9,11 +20,66 @@ Jade Jade::operator+(const Jade& other) const {
     Dispatcher::execute_binary(OpCode::ADD, view, *this, other);
     return view;
 }
-
-
-Jade Jade::operator-(const Jade& other) const {
+Jade Jade::operator+(const Jade& other) && {
     uint64_t max_dims = std::max(this->ndims, other.ndims);
     auto out_shape = Jade::broadcast(*this, other);
+
+    if (can_takeover(*this, out_shape.get(), max_dims)) {
+        Dispatcher::execute_binary(OpCode::ADD, *this, *this, other);
+        return *this;
+    }
+
+    Jade view(this->dtype, 0.0f, out_shape.get(), max_dims);
+    Dispatcher::execute_binary(OpCode::ADD, view, *this, other);
+    return view;
+}
+
+
+Jade Jade::operator+(const double & val) const &{
+    Jade other = Jade::full_like(*this, val);
+    Jade view = Jade::zeros_like(*this);
+    Dispatcher::execute_binary(OpCode::ADD, view, *this, other);
+    return view;
+}
+
+Jade Jade::operator+(const double & val) && {
+    if (this->memory.use_count() == 1) {
+        Jade other = Jade::full_like(*this, val);
+        Dispatcher::execute_binary(OpCode::ADD, *this, *this, other);
+        return *this;
+    }
+    return static_cast<const Jade&>(*this) + val;
+}
+
+Jade Jade::operator-(const double & val) const &{
+    Jade other = Jade::full_like(*this, val);
+    Jade view = Jade::zeros_like(*this);
+    Dispatcher::execute_binary(OpCode::SUB, view, *this, other);
+    return view;
+}
+Jade Jade::operator-(const double & val) &&{
+    if (this->memory.use_count() == 1) {
+        Jade other = Jade::full_like(*this, val);
+        Dispatcher::execute_binary(OpCode::SUB, *this, *this, other);
+        return *this;
+    }
+    return static_cast<const Jade&>(*this) - val;
+}
+
+Jade Jade::operator-(const Jade& other) const &{
+    uint64_t max_dims = std::max(this->ndims, other.ndims);
+    auto out_shape = Jade::broadcast(*this, other);
+    Jade view(this->dtype, 0.0f, out_shape.get(), max_dims);
+    Dispatcher::execute_binary(OpCode::SUB, view, *this, other);
+    return view;
+}
+Jade Jade::operator-(const Jade& other) &&{
+    uint64_t max_dims = std::max(this->ndims, other.ndims);
+    auto out_shape = Jade::broadcast(*this, other);
+    if (can_takeover(*this, out_shape.get(), max_dims)) {
+        Dispatcher::execute_binary(OpCode::SUB, *this, *this, other);
+        return *this;
+    }
     Jade view(this->dtype, 0.0f, out_shape.get(), max_dims);
     Dispatcher::execute_binary(OpCode::SUB, view, *this, other);
     return view;
@@ -78,67 +144,97 @@ Jade Jade::matmul(const Jade& other) const {
     return view;
 }
 
-Jade Jade::operator*(const Jade& other) const {
+Jade Jade::operator*(const Jade& other) const &{
     uint64_t max_dims = std::max(this->ndims, other.ndims);
     auto out_shape = Jade::broadcast(*this, other);
+
+    Jade view(this->dtype, 0.0f, out_shape.get(), max_dims);
+    Dispatcher::execute_binary(OpCode::MUL, view, *this, other);
+    return view;
+}
+Jade Jade::operator*(const Jade& other) &&{
+    uint64_t max_dims = std::max(this->ndims, other.ndims);
+    auto out_shape = Jade::broadcast(*this, other);
+
+    if (can_takeover(*this, out_shape.get(), max_dims)) {
+        Dispatcher::execute_binary(OpCode::MUL, *this, *this, other);
+        return *this;
+    }
+
     Jade view(this->dtype, 0.0f, out_shape.get(), max_dims);
     Dispatcher::execute_binary(OpCode::MUL, view, *this, other);
     return view;
 }
 
 
-Jade Jade::operator+(const double & val) const {
+Jade Jade::operator*(const double & val) const &{
     Jade other = Jade::full_like(*this, val);
     Jade view = Jade::zeros_like(*this);
-    Dispatcher::execute_binary(OpCode::ADD, view, *this, other);
+    Dispatcher::execute_binary(OpCode::MUL, view, *this, other);
     return view;
+
 }
-
-Jade Jade::operator-(const double & val) const {
-    Jade other = Jade::full_like(*this, val);
-    Jade view = Jade::zeros_like(*this);
-    Dispatcher::execute_binary(OpCode::SUB, view, *this, other);
-    return view;
+Jade Jade::operator*(const double & val) &&{
+    if (this->memory.use_count() == 1) {
+        Jade other = Jade::full_like(*this, val);
+        Dispatcher::execute_binary(OpCode::MUL, *this, *this, other);
+        return *this;
+    }
+    return static_cast<const Jade&>(*this) * val;
 }
-
-
 
 Jade& Jade::operator=(const double val) {
     Dispatcher::execute_scalar(OpCode::FILL, *this, val);
     return *this;
 }
 
-Jade Jade::operator*(const double & val) const {
-    Jade other = Jade::full_like(*this, val);
-    Jade view = Jade::zeros_like(*this);
-    Dispatcher::execute_binary(OpCode::MUL, view, *this, other);
-    return view;
-}
 
-void Jade::operator+=(const double & val) {
+void Jade::operator+=(const double & val) &{
     Jade other = Jade::full_like(*this, val);
     Dispatcher::execute_binary(OpCode::ADD, *this, *this, other);
 }
 
-void Jade::operator-=(const double & val) {
+void Jade::operator+=(const double & val) &&{
+    Jade other = Jade::full_like(*this, val);
+    Dispatcher::execute_binary(OpCode::ADD, *this, *this, other);
+}
+
+void Jade::operator-=(const double & val) &&{
+    Jade other = Jade::full_like(*this, val);
+    Dispatcher::execute_binary(OpCode::SUB, *this, *this, other);
+}
+void Jade::operator-=(const double & val) &{
     Jade other = Jade::full_like(*this, val);
     Dispatcher::execute_binary(OpCode::SUB, *this, *this, other);
 }
 
-void Jade::operator*=(const double & val) {
+void Jade::operator*=(const double & val) &{
+    Jade other = Jade::full_like(*this, val);
+    Dispatcher::execute_binary(OpCode::MUL, *this, *this, other);
+}
+void Jade::operator*=(const double & val) &&{
     Jade other = Jade::full_like(*this, val);
     Dispatcher::execute_binary(OpCode::MUL, *this, *this, other);
 }
 
-void Jade::operator+=(Jade& other) {
+void Jade::operator+=(Jade& other) &{
+    Dispatcher::execute_binary(OpCode::ADD, *this, *this, other);
+}
+void Jade::operator+=(Jade& other) &&{
     Dispatcher::execute_binary(OpCode::ADD, *this, *this, other);
 }
 
-void Jade::operator-=(const Jade& other) {
+void Jade::operator-=(const Jade& other) &{
+    Dispatcher::execute_binary(OpCode::SUB, *this, *this, other);
+}
+void Jade::operator-=(const Jade& other) &&{
     Dispatcher::execute_binary(OpCode::SUB, *this, *this, other);
 }
 
-void Jade::operator*=(const Jade& other) {
+void Jade::operator*=(const Jade& other) &{
+    Dispatcher::execute_binary(OpCode::MUL, *this, *this, other);
+}
+void Jade::operator*=(const Jade& other) &&{
     Dispatcher::execute_binary(OpCode::MUL, *this, *this, other);
 }
 

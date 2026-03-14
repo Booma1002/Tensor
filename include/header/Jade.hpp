@@ -232,7 +232,9 @@ namespace bm {
         Jade(DType dtype, std::unique_ptr<uint64_t[]> new_shape, std::unique_ptr<uint64_t[]> new_stride,
              uint64_t new_ndims, uint64_t new_off, std::shared_ptr<Storage> new_mem);
 
-    ////////////////////////////////////////////////////////////
+        Jade();
+
+        ////////////////////////////////////////////////////////////
     /////////////***********************************////////////
     /////////////**  Jade Operator-Overloading  **////////////
     /////////////***********************************////////////
@@ -246,7 +248,8 @@ namespace bm {
      * @param other The right-hand reactant.
      * @return A newly allocated jade containing the element-wise sum.
      */
-        Jade operator+(const Jade& other) const;
+        Jade operator+(const Jade& other)&&;
+        Jade operator+(const Jade& other) const&;
 
         /**
     * @brief Element-wise addition dispatcher.
@@ -255,7 +258,8 @@ namespace bm {
     * @param val The value of the right reactant.
     * @return A newly allocated jade containing the element-wise sum.
     */
-        Jade operator+(const double & val) const;
+        Jade operator+(const double & val)&&;
+        Jade operator+(const double & val) const&;
 
         /**
     * @brief Element-wise subtraction dispatcher.
@@ -264,7 +268,8 @@ namespace bm {
     * @param val The value of the right reactant.
     * @return A newly allocated jade containing the element-wise difference.
     */
-        Jade operator-(const uint64_t & val) const;
+        Jade operator-(const uint64_t & val)&&;
+        Jade operator-(const uint64_t & val) const&;
 
         /**
      * @brief Element-wise subtraction dispatcher.
@@ -274,8 +279,10 @@ namespace bm {
      * @param other The right-hand reactant to subtract.
      * @return A newly allocated jade containing the element-wise difference.
      */
-        Jade operator-(const Jade& other) const;
-        Jade operator-(const double & val) const;
+        Jade operator-(const Jade& other)&&;
+        Jade operator-(const double & val)&&;
+        Jade operator-(const Jade& other) const&;
+        Jade operator-(const double & val) const&;
 
 
         /**
@@ -287,8 +294,10 @@ namespace bm {
      * @param other The right-hand jade reactant.
      * @return A newly allocated jade containing the matrix product.
      */
-        Jade operator*(const Jade &other) const;
-        Jade operator*(const double &val) const;
+        Jade operator*(const Jade &other)&&;
+        Jade operator*(const double &val)&&;
+        Jade operator*(const Jade &other) const &;
+        Jade operator*(const double &val) const &;
         Jade matmul(const Jade& other) const;
 
         /**
@@ -298,8 +307,10 @@ namespace bm {
      * the original memory will not reflect this multiplication; they will retain the old data.
      * @param other The multiplier jade.
      */
-        void operator*=(const Jade& other) ;
-        void operator*=(const double & val) ;
+        void operator*=(const Jade& other)&& ;
+        void operator*=(const double & val)&& ;
+        void operator*=(const Jade& other)  &;
+        void operator*=(const double & val) &;
 
         /**
      * @brief In-place element-wise subtraction.
@@ -307,8 +318,10 @@ namespace bm {
      * @warning UB Warning: Drops original memory reference. Does not mutate the original physical memory.
      * @param other The subtrahend jade.
      */
-        void operator-=(const Jade& other);
-        void operator-=(const double & val);
+        void operator-=(const Jade& other)&&;
+        void operator-=(const double & val)&&;
+        void operator-=(const Jade& other) &;
+        void operator-=(const double & val)&;
 
         /**
      * @brief In-place element-wise addition.
@@ -316,8 +329,10 @@ namespace bm {
      * @warning UB Warning: Drops original memory reference. Does not mutate the original physical memory.
      * @param other The addend jade.
      */
-        void operator+=(Jade& other);
-        void operator+=(const double & val);
+        void operator+=(Jade& other)&&;
+        void operator+=(const double& val)&&;
+        void operator+=(Jade& other)&;
+        void operator+=(const double& val)&;
 
         /**
      * @brief Generates a zero-copy sub-jade view via variadic slicing.
@@ -521,6 +536,7 @@ namespace bm {
         [[nodiscard]] uint64_t get_numel() const;
         [[nodiscard]] uint64_t get_size_physical() const;
         [[nodiscard]] void* data_ptr() const;
+        static bool can_takeover(const Jade& jade, const uint64_t* target_shape, uint64_t target_ndims);
 
     ////////////////////////////////////////////////////////////
     ///////////////////***********************//////////////////

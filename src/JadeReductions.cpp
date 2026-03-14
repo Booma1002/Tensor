@@ -79,3 +79,4 @@ Jade Jade::argmin(const Jade& input, std::initializer_list<uint64_t> axes) {
     else Dispatcher::execute_reduction_unary(OpCode::ARGMIN, output, input[axes]);
     return output;
 }
+
