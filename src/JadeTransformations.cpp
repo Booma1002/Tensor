@@ -17,10 +17,10 @@ Jade  Jade::transpose() {
 }
 
 Jade Jade::pad(double fill_val, const uint64_t* pads) const {
-    // Todo : implement Pad specs, such as:
-    //          Pad(len=x, optional fill=0.0f, optional axes={}<uint64_t>),
-    //          Pad(len=x, optional fill=0.0f), //applies on all dims if axes{} is empty
-    //          Pad(len=x, optional fill=0.0f, optional axes={}<std::pair<uint64_t, uint64_t>>) // applies before/after if ilist<T> T is pair.
+//     Todo : implement Pad specs, such as:
+//              Pad(len=x, optional fill=0.0f, optional axes={}<uint64_t>),
+//              Pad(len=x, optional fill=0.0f), //applies on all dims if axes{} is empty
+//              Pad(len=x, optional fill=0.0f, optional axes={}<std::pair<uint64_t, uint64_t>>) // applies before/after if ilist<T> T is pair.
 
     auto new_shape = std::make_unique<uint64_t[]>(ndims);
     for(size_t i=0; i<ndims; ++i)

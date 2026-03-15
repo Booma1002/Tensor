@@ -2,8 +2,6 @@
 #include "header/Dispatcher.hpp"
 using namespace bm;
 
-// todo : implement r-value inplace mathops
-//  for every count of memory manipulation
 bool Jade::can_takeover(const Jade& jade, const uint64_t* target_shape, uint64_t target_ndims) {
     if (jade.memory.use_count() != 1) return false;
     if (jade.ndims != target_ndims) return false;
@@ -276,3 +274,30 @@ Jade Jade::matmul(const Jade& other) const {
 
 // todo: add() sub() mul()
 
+// ==============================================================================
+// TODO: THE AXIS HOLE (MONTH 1 - PHASE 1)
+// ==============================================================================
+
+// TODO: 1. [SHAPE MATH] Implement `calculate_reduction_shape`
+//    - Input: original_shape, axes_to_reduce (std::vector<int64_t>), keepdims (bool)
+//    - Logic: Handle negative axes (e.g., -1 means last dim).
+//    - Logic: If keepdims=true, set reduced dim to 1. If false, remove the dim.
+//    - Output: std::vector<uint64_t> representing the new shape.
+
+// TODO: 2. [FAST-PATH REACTOR] Implement 1-Axis Reduction
+//    - Do NOT build the generalized N-axis OpenMP reactor yet.
+//    - Build `JadeReactor::react_reduce_1d(axis)`
+//    - Logic: Iterate over the *output* tensor size in parallel.
+//    - Logic: Reverse-map output index to input memory, run inner loop over the specified stride.
+
+// TODO: 3. [FRONTEND APIs] Update Reductions in Jade.hpp
+//    - Add: `Jade sum(std::initializer_list<int64_t> axes, bool keepdims=false) const;`
+//    - Add: `Jade mean(std::initializer_list<int64_t> axes, bool keepdims=false) const;`
+//    - Add: `Jade max(std::initializer_list<int64_t> axes, bool keepdims=false) const;`
+//    - (Inside these, throw std::runtime_error if axes.size() > 1 for now).
+
+// TODO: 4. [THE AUTOGRAD SAVIOR] Implement `sum_to_size`
+//    - Add: `Jade sum_to_size(const std::vector<uint64_t>& target_shape) const;`
+//    - Logic: Compare `this->shape` to `target_shape`.
+//    - Identify which axes were broadcasted (where target is 1 and this is > 1, or missing dims).
+//    - Call `this->sum(broadcasted_axes, true)` to collapse the gradient back to weight size.

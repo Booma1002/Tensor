@@ -30,13 +30,8 @@ void* CPUAllocator::allocate(uint64_t bytes){
     if (posix_memalign(&ptr, ALIGNMENT, bytes) != 0) ptr = nullptr;
     #endif
     if (!ptr){
-        // TODO : Make it try, and catch if can't allocate, to
-        //  try again with a different size with delays.
         throw AllocatorException("[CPU Allocator] Failed To Fetch _aligned_malloc().");
     }
-
-    // TODO: should I do zero initialize? not for now; for speed.
-    // TODO: when I feel like, it's memset.
 
     std::string msg = std::format("[CPU Allocator] Allocated Memory: fulfilled the requested {} B. ", std::to_string(bytes));
     LOG_DEBUG(msg);
